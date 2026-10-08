@@ -21,10 +21,10 @@ export function buildWhatsappOrderUrl(
   customer: CustomerDetails
 ): string {
   const itemsText = lines
-    .map(
-      (l, idx) =>
-        `${idx + 1}. ${l.product.name} x${l.quantity} — ${formatPrice(l.lineTotal)}`
-    )
+    .map((l, idx) => {
+      const unit = l.product.unit ? ` ${l.product.unit}` : "";
+      return `${idx + 1}. ${l.product.name} × ${l.quantity}${unit} — ${formatPrice(l.lineTotal)}`;
+    })
     .join("\n");
 
   const messageParts = [

@@ -40,24 +40,26 @@ export default function ProductGrid() {
         </div>
       </div>
 
-      {/* Sticky category chips */}
-      <div className="sticky top-[65px] z-20 mt-4 border-b border-border bg-background/90 backdrop-blur-md">
-        <div className="no-scrollbar mx-auto flex max-w-6xl gap-2 overflow-x-auto px-4 py-3">
-          {[ALL, ...categories].map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-                activeCategory === cat
-                  ? "bg-brand text-white"
-                  : "bg-surface text-foreground ring-1 ring-border hover:ring-brand"
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
+      {/* Sticky category chips — показываются, когда заданы категории */}
+      {categories.length > 0 && (
+        <div className="sticky top-[65px] z-20 mt-4 border-b border-border bg-background/90 backdrop-blur-md">
+          <div className="no-scrollbar mx-auto flex max-w-6xl gap-2 overflow-x-auto px-4 py-3">
+            {[ALL, ...categories].map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                  activeCategory === cat
+                    ? "bg-brand text-white"
+                    : "bg-surface text-foreground ring-1 ring-border hover:ring-brand"
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Products */}
       <div className="mx-auto w-full max-w-6xl px-4 py-6">

@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Source HEIC photos (converted to JPG in src/catalog)
+*.HEIC
+*.heic

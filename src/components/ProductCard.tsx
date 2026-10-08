@@ -10,29 +10,56 @@ export default function ProductCard({ product }: { product: Product }) {
   const { items, addItem, decreaseItem } = useCart();
   const inCart = items.find((i) => i.productId === product.id);
 
+  const hasName = product.name.trim() !== "";
+  const hasDescription = product.description.trim() !== "";
+  const hasPrice = product.price > 0;
+  const hasCategory = !!product.category && product.category.trim() !== "";
+  const label = hasName ? product.name : "товар";
+
   return (
     <div className="group flex flex-col overflow-hidden rounded-2xl bg-surface shadow-sm ring-1 ring-border transition-all hover:-translate-y-1 hover:shadow-lg">
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-brand-tint">
         <Image
           src={product.image}
-          alt={product.name}
+          alt={hasName ? product.name : "Товар"}
           fill
           placeholder="blur"
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           className="object-cover transition-transform duration-300 group-hover:scale-105"
         />
-        <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-foreground shadow-sm backdrop-blur">
-          {product.category}
-        </span>
+        {hasCategory && (
+          <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-foreground shadow-sm backdrop-blur">
+            {product.category}
+          </span>
+        )}
       </div>
 
       <div className="flex flex-1 flex-col p-4">
-        <h3 className="font-bold leading-snug">{product.name}</h3>
-        <p className="mt-1 flex-1 text-sm text-muted">{product.description}</p>
+        <h3 className={`font-bold leading-snug ${hasName ? "" : "text-muted/50 italic"}`}>
+          {hasName ? product.name : "Название товара"}
+        </h3>
+        <p className="mt-1 flex-1 text-sm text-muted">
+          {hasDescription ? (
+            product.description
+          ) : (
+            <span className="text-muted/50 italic">Описание</span>
+          )}
+        </p>
 
         <div className="mt-4 flex items-center justify-between">
           <span className="text-lg font-extrabold tabular-nums">
-            {formatPrice(product.price)}
+            {hasPrice ? (
+              <>
+                {formatPrice(product.price)}
+                {product.unit && (
+                  <span className="ml-1 text-xs font-medium text-muted">
+                    / {product.unit}
+                  </span>
+                )}
+              </>
+            ) : (
+              <span className="text-muted/50">—</span>
+            )}
           </span>
 
           {inCart ? (
@@ -40,7 +67,7 @@ export default function ProductCard({ product }: { product: Product }) {
               <button
                 onClick={() => decreaseItem(product.id)}
                 className="grid h-8 w-8 place-items-center rounded-full bg-surface text-brand shadow-sm transition active:scale-90"
-                aria-label={`Уменьшить ${product.name}`}
+                aria-label={`Уменьшить ${label}`}
               >
                 <MinusIcon className="h-4 w-4" />
               </button>
@@ -50,7 +77,7 @@ export default function ProductCard({ product }: { product: Product }) {
               <button
                 onClick={() => addItem(product.id)}
                 className="grid h-8 w-8 place-items-center rounded-full bg-brand text-white shadow-sm transition active:scale-90"
-                aria-label={`Увеличить ${product.name}`}
+                aria-label={`Увеличить ${label}`}
               >
                 <PlusIcon className="h-4 w-4" />
               </button>

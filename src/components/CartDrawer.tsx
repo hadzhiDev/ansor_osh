@@ -127,6 +127,7 @@ export default function CartDrawer() {
                     <p className="truncate font-semibold">{line.product.name}</p>
                     <p className="text-sm text-muted">
                       {formatPrice(line.product.price)}
+                      {line.product.unit && ` / ${line.product.unit}`}
                     </p>
                     <button
                       onClick={() => removeItem(line.product.id)}
