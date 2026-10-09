@@ -17,9 +17,39 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const siteTitle = `${shopConfig.name} — Заказ онлайн`;
+const siteDescription = `Копчёная рыба, деликатесы и натуральные продукты. Выбирайте товары и заказывайте в ${shopConfig.name} через WhatsApp.`;
+
 export const metadata: Metadata = {
-  title: `${shopConfig.name} — Заказ онлайн`,
-  description: `Выбирайте товары и заказывайте в ${shopConfig.name} через WhatsApp.`,
+  // Задайте домен сайта через переменную окружения NEXT_PUBLIC_SITE_URL
+  // (например NEXT_PUBLIC_SITE_URL=https://ansor-osh.kg), чтобы превью
+  // корректно отображалось при отправке ссылки в WhatsApp/соцсетях.
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
+  ),
+  title: siteTitle,
+  description: siteDescription,
+  openGraph: {
+    title: siteTitle,
+    description: siteDescription,
+    type: "website",
+    locale: "ru_RU",
+    siteName: shopConfig.name,
+    images: [
+      {
+        url: "/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: `${shopConfig.name} — рыба, мясные деликатесы и натуральные продукты`,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: siteTitle,
+    description: siteDescription,
+    images: ["/og-image.jpg"],
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
