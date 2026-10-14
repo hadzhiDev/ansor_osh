@@ -1,9 +1,9 @@
 import { shopConfig } from "@/config/shop";
 import { formatPrice } from "@/lib/format";
-import { Product } from "@/catalog/products";
+import { CartProduct } from "@/lib/cart-context";
 
 export type OrderLine = {
-  product: Product;
+  product: CartProduct;
   quantity: number;
   lineTotal: number;
 };

@@ -115,13 +115,15 @@ export default function CartDrawer() {
                   className="flex items-center gap-3 rounded-2xl border border-border p-3"
                 >
                   <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl bg-brand-tint">
-                    <Image
-                      src={line.product.image}
-                      alt={line.product.name}
-                      fill
-                      sizes="64px"
-                      className="object-cover"
-                    />
+                    {line.product.image && (
+                      <Image
+                        src={line.product.image}
+                        alt={line.product.name}
+                        fill
+                        sizes="64px"
+                        className="object-cover"
+                      />
+                    )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-semibold">{line.product.name}</p>
@@ -149,7 +151,7 @@ export default function CartDrawer() {
                       {line.quantity}
                     </span>
                     <button
-                      onClick={() => addItem(line.product.id)}
+                      onClick={() => addItem(line.product)}
                       className="grid h-7 w-7 place-items-center rounded-full bg-brand text-white shadow-sm transition active:scale-90"
                       aria-label={`Увеличить ${line.product.name}`}
                     >

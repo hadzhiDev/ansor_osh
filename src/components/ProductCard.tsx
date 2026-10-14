@@ -1,35 +1,48 @@
 "use client";
 
 import Image from "next/image";
-import { Product } from "@/catalog/products";
-import { useCart } from "@/lib/cart-context";
+import { Product } from "@/lib/types";
+import { useCart, CartProduct } from "@/lib/cart-context";
 import { formatPrice } from "@/lib/format";
 import { PlusIcon, MinusIcon } from "@/components/icons";
 
 export default function ProductCard({ product }: { product: Product }) {
   const { items, addItem, decreaseItem } = useCart();
-  const inCart = items.find((i) => i.productId === product.id);
+  const inCart = items.find((i) => i.product.id === product.id);
 
   const hasName = product.name.trim() !== "";
   const hasDescription = product.description.trim() !== "";
   const hasPrice = product.price > 0;
-  const hasCategory = !!product.category && product.category.trim() !== "";
+  const hasCategory = !!product.categoryName && product.categoryName.trim() !== "";
   const label = hasName ? product.name : "товар";
+
+  const snapshot: CartProduct = {
+    id: product.id,
+    name: product.name,
+    price: product.price,
+    unit: product.unit,
+    image: product.image,
+  };
 
   return (
     <div className="group flex flex-col overflow-hidden rounded-2xl bg-surface shadow-sm ring-1 ring-border transition-all hover:-translate-y-1 hover:shadow-lg">
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-brand-tint">
-        <Image
-          src={product.image}
-          alt={hasName ? product.name : "Товар"}
-          fill
-          placeholder="blur"
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-          className="object-cover transition-transform duration-300 group-hover:scale-105"
-        />
+        {product.image ? (
+          <Image
+            src={product.image}
+            alt={hasName ? product.name : "Товар"}
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center text-muted/50">
+            нет фото
+          </div>
+        )}
         {hasCategory && (
           <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-foreground shadow-sm backdrop-blur">
-            {product.category}
+            {product.categoryName}
           </span>
         )}
       </div>
@@ -75,7 +88,7 @@ export default function ProductCard({ product }: { product: Product }) {
                 {inCart.quantity}
               </span>
               <button
-                onClick={() => addItem(product.id)}
+                onClick={() => addItem(snapshot)}
                 className="grid h-8 w-8 place-items-center rounded-full bg-brand text-white shadow-sm transition active:scale-90"
                 aria-label={`Увеличить ${label}`}
               >
@@ -84,7 +97,7 @@ export default function ProductCard({ product }: { product: Product }) {
             </div>
           ) : (
             <button
-              onClick={() => addItem(product.id)}
+              onClick={() => addItem(snapshot)}
               className="flex items-center gap-1.5 rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-brand-dark active:scale-95"
             >
               <PlusIcon className="h-4 w-4" />

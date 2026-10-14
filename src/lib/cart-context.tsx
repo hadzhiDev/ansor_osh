@@ -8,27 +8,54 @@ import {
   useState,
   ReactNode,
 } from "react";
-import { Product, products } from "@/catalog/products";
+
+// Снимок товара, сохраняемый в корзине (не зависит от загрузки каталога).
+export type CartProduct = {
+  id: number;
+  name: string;
+  price: number;
+  unit?: string;
+  image: string | null;
+};
 
 export type CartItem = {
-  productId: string;
+  product: CartProduct;
   quantity: number;
+};
+
+type CartLine = {
+  product: CartProduct;
+  quantity: number;
+  lineTotal: number;
 };
 
 type CartContextValue = {
   items: CartItem[];
-  addItem: (productId: string) => void;
-  removeItem: (productId: string) => void;
-  decreaseItem: (productId: string) => void;
+  addItem: (product: CartProduct) => void;
+  removeItem: (productId: number) => void;
+  decreaseItem: (productId: number) => void;
   clearCart: () => void;
   totalCount: number;
   totalPrice: number;
-  lines: { product: Product; quantity: number; lineTotal: number }[];
+  lines: CartLine[];
 };
 
 const CartContext = createContext<CartContextValue | undefined>(undefined);
 
 const STORAGE_KEY = "ansor-osh-cart";
+
+function isValidItem(x: unknown): x is CartItem {
+  if (!x || typeof x !== "object") return false;
+  const item = x as Record<string, unknown>;
+  const p = item.product as Record<string, unknown> | undefined;
+  return (
+    typeof item.quantity === "number" &&
+    !!p &&
+    typeof p.id === "number" &&
+    typeof p.name === "string" &&
+    typeof p.price === "number"
+  );
+}
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
@@ -38,10 +65,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
       if (raw) {
-        setItems(JSON.parse(raw));
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.every(isValidItem)) {
+          setItems(parsed);
+        }
       }
     } catch {
-      // ignore corrupted storage
+      // игнорируем повреждённые/устаревшие данные
     }
     setHydrated(true);
   }, []);
@@ -51,53 +81,51 @@ export function CartProvider({ children }: { children: ReactNode }) {
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
     } catch {
-      // ignore write failures (e.g. private browsing)
+      // приватный режим и т.п.
     }
   }, [items, hydrated]);
 
-  function addItem(productId: string) {
+  function addItem(product: CartProduct) {
     setItems((prev) => {
-      const existing = prev.find((i) => i.productId === productId);
+      const existing = prev.find((i) => i.product.id === product.id);
       if (existing) {
         return prev.map((i) =>
-          i.productId === productId ? { ...i, quantity: i.quantity + 1 } : i
+          i.product.id === product.id
+            ? { ...i, quantity: i.quantity + 1 }
+            : i
         );
       }
-      return [...prev, { productId, quantity: 1 }];
+      return [...prev, { product, quantity: 1 }];
     });
   }
 
-  function decreaseItem(productId: string) {
+  function decreaseItem(productId: number) {
     setItems((prev) =>
       prev
         .map((i) =>
-          i.productId === productId ? { ...i, quantity: i.quantity - 1 } : i
+          i.product.id === productId
+            ? { ...i, quantity: i.quantity - 1 }
+            : i
         )
         .filter((i) => i.quantity > 0)
     );
   }
 
-  function removeItem(productId: string) {
-    setItems((prev) => prev.filter((i) => i.productId !== productId));
+  function removeItem(productId: number) {
+    setItems((prev) => prev.filter((i) => i.product.id !== productId));
   }
 
   function clearCart() {
     setItems([]);
   }
 
-  const lines = useMemo(
+  const lines: CartLine[] = useMemo(
     () =>
-      items
-        .map((item) => {
-          const product = products.find((p) => p.id === item.productId);
-          if (!product) return null;
-          return {
-            product,
-            quantity: item.quantity,
-            lineTotal: product.price * item.quantity,
-          };
-        })
-        .filter((line): line is { product: Product; quantity: number; lineTotal: number } => line !== null),
+      items.map((item) => ({
+        product: item.product,
+        quantity: item.quantity,
+        lineTotal: item.product.price * item.quantity,
+      })),
     [items]
   );
 
