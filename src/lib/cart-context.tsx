@@ -18,14 +18,17 @@ export type CartProduct = {
   image: string | null;
 };
 
+// amount — покупка «на сумму» (сом). Если задано, считается вместо price × quantity.
 export type CartItem = {
   product: CartProduct;
   quantity: number;
+  amount?: number;
 };
 
-type CartLine = {
+export type CartLine = {
   product: CartProduct;
   quantity: number;
+  amount?: number;
   lineTotal: number;
 };
 
@@ -34,6 +37,8 @@ type CartContextValue = {
   addItem: (product: CartProduct) => void;
   removeItem: (productId: number) => void;
   decreaseItem: (productId: number) => void;
+  setAmount: (productId: number, amount: number | undefined) => void;
+  syncCatalog: (products: CartProduct[]) => void;
   clearCart: () => void;
   totalCount: number;
   totalPrice: number;
@@ -53,13 +58,17 @@ function isValidItem(x: unknown): x is CartItem {
     !!p &&
     typeof p.id === "number" &&
     typeof p.name === "string" &&
-    typeof p.price === "number"
+    typeof p.price === "number" &&
+    (item.amount === undefined || typeof item.amount === "number")
   );
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
+  // Актуальный каталог: корзина в localStorage хранит снимки, которые могли
+  // устареть (цена, единица) — при выводе подставляем свежие данные.
+  const [catalog, setCatalog] = useState<Map<number, CartProduct>>(new Map());
 
   useEffect(() => {
     try {
@@ -89,10 +98,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems((prev) => {
       const existing = prev.find((i) => i.product.id === product.id);
       if (existing) {
+        // Обновляем снимок товара (цена/единица могли измениться) и
+        // выходим из режима «на сумму» — кнопки +/- работают с количеством.
         return prev.map((i) =>
           i.product.id === product.id
-            ? { ...i, quantity: i.quantity + 1 }
-            : i
+            ? {
+                product,
+                quantity: i.amount === undefined ? i.quantity + 1 : i.quantity,
+              }
+            : i,
         );
       }
       return [...prev, { product, quantity: 1 }];
@@ -104,15 +118,28 @@ export function CartProvider({ children }: { children: ReactNode }) {
       prev
         .map((i) =>
           i.product.id === productId
-            ? { ...i, quantity: i.quantity - 1 }
-            : i
+            ? {
+                product: i.product,
+                quantity: i.amount === undefined ? i.quantity - 1 : i.quantity,
+              }
+            : i,
         )
-        .filter((i) => i.quantity > 0)
+        .filter((i) => i.quantity > 0),
+    );
+  }
+
+  function setAmount(productId: number, amount: number | undefined) {
+    setItems((prev) =>
+      prev.map((i) => (i.product.id === productId ? { ...i, amount } : i)),
     );
   }
 
   function removeItem(productId: number) {
     setItems((prev) => prev.filter((i) => i.product.id !== productId));
+  }
+
+  function syncCatalog(products: CartProduct[]) {
+    setCatalog(new Map(products.map((p) => [p.id, p])));
   }
 
   function clearCart() {
@@ -121,15 +148,25 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const lines: CartLine[] = useMemo(
     () =>
-      items.map((item) => ({
-        product: item.product,
-        quantity: item.quantity,
-        lineTotal: item.product.price * item.quantity,
-      })),
-    [items]
+      items.map((item) => {
+        const product = catalog.get(item.product.id) ?? item.product;
+        return {
+          product,
+          quantity: item.quantity,
+          amount: item.amount,
+          lineTotal:
+            item.amount !== undefined
+              ? item.amount
+              : product.price * item.quantity,
+        };
+      }),
+    [items, catalog],
   );
 
-  const totalCount = lines.reduce((sum, l) => sum + l.quantity, 0);
+  const totalCount = lines.reduce(
+    (sum, l) => sum + (l.amount !== undefined ? 1 : l.quantity),
+    0,
+  );
   const totalPrice = lines.reduce((sum, l) => sum + l.lineTotal, 0);
 
   const value: CartContextValue = {
@@ -137,6 +174,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     addItem,
     removeItem,
     decreaseItem,
+    setAmount,
+    syncCatalog,
     clearCart,
     totalCount,
     totalPrice,

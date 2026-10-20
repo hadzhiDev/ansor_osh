@@ -19,7 +19,15 @@ type ApiProduct = {
   category_id: number | null;
   category_name: string | null;
   created_at: string;
-  unit?: string | null; // появится, если добавите поле в бэкенд
+  price_per?: string | null; // код из UNIT_CHOICES: "unit" | "kg" | "l" | "0.5 l"
+};
+
+// Подписи единиц — зеркало UNIT_CHOICES в Django-модели.
+const UNIT_LABELS: Record<string, string> = {
+  unit: "шт",
+  kg: "кг",
+  l: "л",
+  "0.5 l": "0.5 л",
 };
 
 type ApiCategory = { id: number; name: string; slug: string };
@@ -34,7 +42,7 @@ function mapProduct(p: ApiProduct): Product {
     name: p.name,
     description: p.description ?? "",
     price: Number(p.price) || 0,
-    unit: p.unit ?? undefined,
+    unit: p.price_per ? UNIT_LABELS[p.price_per] ?? p.price_per : undefined,
     image: p.image ?? null,
     categoryId: p.category_id ?? null,
     categoryName: p.category_name ?? null,

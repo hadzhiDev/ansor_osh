@@ -3,7 +3,7 @@ export const shopConfig = {
   name: "Ansar Osh",
   // Номер WhatsApp в международном формате, только цифры (без +, пробелов и дефисов).
   // Пример: киргизский номер +996 700 12 34 56 -> "996700123456"
-  whatsappNumber: "+996556113007",
+  whatsappNumber: "+996559212142",
   currency: "сом",
   currencyLocale: "ru-RU",
 };

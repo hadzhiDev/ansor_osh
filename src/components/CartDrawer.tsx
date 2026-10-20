@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useCart } from "@/lib/cart-context";
 import { useUi } from "@/lib/ui-context";
 import { formatPrice } from "@/lib/format";
-import { buildWhatsappOrderUrl } from "@/lib/whatsapp";
+import { approxQuantity, buildWhatsappOrderUrl } from "@/lib/whatsapp";
 import { isValidKgPhone } from "@/lib/phone";
 import {
   CartIcon,
@@ -23,6 +23,7 @@ export default function CartDrawer() {
     totalCount,
     addItem,
     decreaseItem,
+    setAmount,
     removeItem,
     clearCart,
   } = useCart();
@@ -48,6 +49,11 @@ export default function CartDrawer() {
     }
     if (lines.length === 0) {
       setError("Ваша корзина пуста.");
+      return;
+    }
+    const noAmount = lines.find((l) => l.amount !== undefined && l.amount <= 0);
+    if (noAmount) {
+      setError(`Укажите сумму для «${noAmount.product.name}».`);
       return;
     }
     setError("");
@@ -109,57 +115,121 @@ export default function CartDrawer() {
             </div>
           ) : (
             <ul className="flex flex-col gap-3">
-              {lines.map((line) => (
-                <li
-                  key={line.product.id}
-                  className="flex items-center gap-3 rounded-2xl border border-border p-3"
-                >
-                  <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl bg-brand-tint">
-                    {line.product.image && (
-                      <Image
-                        src={line.product.image}
-                        alt={line.product.name}
-                        fill
-                        sizes="64px"
-                        className="object-cover"
-                      />
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold">{line.product.name}</p>
-                    <p className="text-sm text-muted">
-                      {formatPrice(line.product.price)}
-                      {line.product.unit && ` / ${line.product.unit}`}
-                    </p>
-                    <button
-                      onClick={() => removeItem(line.product.id)}
-                      className="mt-0.5 inline-flex items-center gap-1 text-xs text-accent hover:underline"
-                    >
-                      <TrashIcon className="h-3.5 w-3.5" />
-                      Удалить
-                    </button>
-                  </div>
-                  <div className="flex items-center gap-1 rounded-full bg-brand-tint p-1">
-                    <button
-                      onClick={() => decreaseItem(line.product.id)}
-                      className="grid h-7 w-7 place-items-center rounded-full bg-surface text-brand shadow-sm transition active:scale-90"
-                      aria-label={`Уменьшить ${line.product.name}`}
-                    >
-                      <MinusIcon className="h-3.5 w-3.5" />
-                    </button>
-                    <span className="w-5 text-center text-sm font-bold tabular-nums">
-                      {line.quantity}
-                    </span>
-                    <button
-                      onClick={() => addItem(line.product)}
-                      className="grid h-7 w-7 place-items-center rounded-full bg-brand text-white shadow-sm transition active:scale-90"
-                      aria-label={`Увеличить ${line.product.name}`}
-                    >
-                      <PlusIcon className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                </li>
-              ))}
+              {lines.map((line) => {
+                const byAmount = line.amount !== undefined;
+                const approx =
+                  byAmount && line.amount! > 0
+                    ? approxQuantity(line.amount!, line.product.price, line.product.unit)
+                    : "";
+                return (
+                  <li
+                    key={line.product.id}
+                    className="flex flex-col gap-2 rounded-2xl border border-border p-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl bg-brand-tint">
+                        {line.product.image && (
+                          <Image
+                            src={line.product.image}
+                            alt={line.product.name}
+                            fill
+                            sizes="64px"
+                            className="object-cover"
+                          />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-semibold">
+                          {line.product.name}
+                        </p>
+                        <p className="text-sm text-muted">
+                          {formatPrice(line.product.price)}
+                          {line.product.unit && ` / ${line.product.unit}`}
+                        </p>
+                        {approx && (
+                          <p className="text-xs font-medium text-brand">
+                            ≈ {approx}
+                          </p>
+                        )}
+                        <button
+                          onClick={() => removeItem(line.product.id)}
+                          className="mt-0.5 inline-flex items-center gap-1 text-xs text-accent hover:underline"
+                        >
+                          <TrashIcon className="h-3.5 w-3.5" />
+                          Удалить
+                        </button>
+                      </div>
+                      {byAmount ? (
+                        <label className="flex items-center gap-1 rounded-full border border-border bg-background px-3 py-1.5 focus-within:border-brand">
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            placeholder="0"
+                            autoFocus={line.amount === 0}
+                            value={line.amount ? String(line.amount) : ""}
+                            onChange={(e) => {
+                              const digits = e.target.value
+                                .replace(/\D/g, "")
+                                .slice(0, 7);
+                              setAmount(
+                                line.product.id,
+                                digits ? Number(digits) : 0,
+                              );
+                            }}
+                            className="w-16 bg-transparent text-right text-sm font-bold tabular-nums outline-none"
+                            aria-label={`Сумма для ${line.product.name}`}
+                          />
+                          <span className="text-sm text-muted">сом</span>
+                        </label>
+                      ) : (
+                        <div className="flex items-center gap-1 rounded-full bg-brand-tint p-1">
+                          <button
+                            onClick={() => decreaseItem(line.product.id)}
+                            className="grid h-7 w-7 place-items-center rounded-full bg-surface text-brand shadow-sm transition active:scale-90"
+                            aria-label={`Уменьшить ${line.product.name}`}
+                          >
+                            <MinusIcon className="h-3.5 w-3.5" />
+                          </button>
+                          <span className="w-5 text-center text-sm font-bold tabular-nums">
+                            {line.quantity}
+                          </span>
+                          <button
+                            onClick={() => addItem(line.product)}
+                            className="grid h-7 w-7 place-items-center rounded-full bg-brand text-white shadow-sm transition active:scale-90"
+                            aria-label={`Увеличить ${line.product.name}`}
+                          >
+                            <PlusIcon className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex rounded-full bg-background p-0.5 text-xs font-semibold">
+                      <button
+                        onClick={() => setAmount(line.product.id, undefined)}
+                        className={`flex-1 rounded-full py-1.5 transition ${
+                          byAmount
+                            ? "text-muted"
+                            : "bg-surface text-foreground shadow-sm"
+                        }`}
+                      >
+                        По количеству
+                      </button>
+                      <button
+                        onClick={() =>
+                          !byAmount && setAmount(line.product.id, 0)
+                        }
+                        className={`flex-1 rounded-full py-1.5 transition ${
+                          byAmount
+                            ? "bg-surface text-foreground shadow-sm"
+                            : "text-muted"
+                        }`}
+                      >
+                        На сумму
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
 

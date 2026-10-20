@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Product, Category } from "@/lib/types";
 import ProductCard from "@/components/ProductCard";
+import { useCart } from "@/lib/cart-context";
 import { SearchIcon } from "@/components/icons";
 
 type Props = {
@@ -14,6 +15,20 @@ export default function ProductGrid({ products, categories }: Props) {
   // null = «Все»
   const [activeId, setActiveId] = useState<number | null>(null);
   const [query, setQuery] = useState("");
+  const { syncCatalog } = useCart();
+
+  useEffect(() => {
+    syncCatalog(
+      products.map((p) => ({
+        id: p.id,
+        name: p.name,
+        price: p.price,
+        unit: p.unit,
+        image: p.image,
+      }))
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [products]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();

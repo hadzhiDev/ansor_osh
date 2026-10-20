@@ -84,9 +84,15 @@ export default function ProductCard({ product }: { product: Product }) {
               >
                 <MinusIcon className="h-4 w-4" />
               </button>
-              <span className="w-6 text-center font-bold tabular-nums">
-                {inCart.quantity}
-              </span>
+              {inCart.amount !== undefined ? (
+                <span className="px-1 text-center text-xs font-bold tabular-nums">
+                  {inCart.amount > 0 ? formatPrice(inCart.amount) : "сумма"}
+                </span>
+              ) : (
+                <span className="w-6 text-center font-bold tabular-nums">
+                  {inCart.quantity}
+                </span>
+              )}
               <button
                 onClick={() => addItem(snapshot)}
                 className="grid h-8 w-8 place-items-center rounded-full bg-brand text-white shadow-sm transition active:scale-90"
